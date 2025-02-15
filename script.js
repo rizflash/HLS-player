@@ -77,3 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.readAsText(file);
     });
   });
+
+  function initCustomCaptions() {
+    console.log('Implement custom caption logic here');
+  }
+});
