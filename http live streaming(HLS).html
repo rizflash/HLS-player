@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HLS Video Player dengan Custom Caption</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .video-container {
+      position: relative;
+      margin-top: 20px;
+    }
+    video {
+      width: 100%;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+    @media (max-width: 600px) {
+      h2 { font-size: 20px; }
+      button { font-size: 14px; }
+      label { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>HLS Video Player</h2>
+    <input type="text" id="hls-url" placeholder="Masukkan URL HLS...">
+    <button onclick="loadStream()">Load Stream</button>
+    <div class="video-container">
+      <video id="video" controls crossorigin="anonymous"></video>
+    </div>
+    <label for="upload-subtitle">Masukkan subtitlenya</label>
+    <input type="file" id="upload-subtitle" accept=".srt,.vtt" multiple>
+  </div>
+
+  <script>
+    function loadStream() {
+      const video = document.getElementById("video");
+      const url = document.getElementById("hls-url").value;
+      if (!url) {
+        alert("Masukkan URL HLS terlebih dahulu!");
+        return;
+      }
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = url;
+      }
+      
+      new Plyr(video, {
+        captions: { active: true, update: true, language: "auto" },
+        controls: ["play", "progress", "current-time", "duration", "mute", "captions", "settings", "fullscreen"]
+      });
+    }
+
+    document.getElementById("upload-subtitle").addEventListener("change", function (event) {
+      const files = event.target.files;
+      const video = document.getElementById("video");
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          let content = e.target.result;
+          const ext = file.name.split(".").pop().toLowerCase();
+          if (ext === "srt") {
+            content = "WEBVTT\n\n" + content.replace(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/g, "$1:$2:$3.$4");
+          }
+          const blob = new Blob([content], { type: "text/vtt" });
+          const track = document.createElement("track");
+          track.kind = "subtitles";
+          track.label = file.name;
+          track.srclang = file.name.split(".")[0];
+          track.src = URL.createObjectURL(blob);
+          track.default = video.textTracks.length === 0;
+          video.appendChild(track);
+          setTimeout(initCustomCaptions, 500);
+        };
+        reader.readAsText(file);
+      });
+    });
+  </script>
+</body>
+</html>
